@@ -19,15 +19,57 @@ library(cooccur)
 
 # load files
 load('data/all_inat.Rdata')
+load('data/nlcd_codes.Rdata')
 load('data/cities.Rdata')
 
 # source files
 source('functions/isp_functions.r')
 source('functions/cc_functions.r')
-source('functions/keys.R')
+source('keys.R')
 
 # keys
 register_google(key = personal_google_api_key) 
+
+# *************************************************************
+# QUICK GLIMPSE INTO HOW OBSERVATIONS ARE ACCESSED AND MATCHED
+# *************************************************************
+# set up bounding box for US only (optional)
+bounds <- c(25, -125.1, 49.5, -66.7) #all US
+
+# retrieve observations for a given species
+sp_all <- get_inat_obs(taxon_name = "apis mellifera", 
+                       quality = "research", 
+                       maxresults = 500,
+                       bounds = bounds)
+
+# map observations
+sp_map <- inat_map(sp_all, plot = FALSE)
+sp_map + borders("state") + theme_bw()
+
+# match an nlcd value to an observation
+city <- get_map("San Francisco", zoom = 10)
+bb<-attr(city, 'bb')
+extentB <- polygon_from_extent(raster::extent(bb$ll.lon, bb$ur.lon, bb$ll.lat, bb$ur.lat), proj4string = "+proj=longlat +ellps=GRS80   +datum=NAD83 +no_defs")
+city_nlcd <- get_nlcd (template = (extentB), label = "San Francisco")
+sp_city <- sp_all %>%
+    filter(latitude > bb$ll.lat & latitude < bb$ur.lat &
+             longitude > bb$ll.lon & longitude < bb$ur.lon)
+sp_points <- data.frame(sp_city) 
+coordinates(sp_points) = ~longitude + latitude
+proj4string(sp_points) <- CRS("+init=epsg:4326") 
+sp_points2 <- spTransform(sp_points, proj4string(city_nlcd))
+sp_points3 <- raster::extract(city_nlcd, sp_points2, sp=TRUE)
+sp_city_wNLCD <- spTransform(sp_points3, CRS("+init=epsg:4326")) %>%
+    as.tibble() %>%
+    rename("nlcd_code" = !!names(.[37])) %>%
+    left_join(nlcd_codes, by = "nlcd_code")
+sp_city_wNLCD
+    
+
+# *************************************************************
+# TO SAVE TIME, ALL ALL CNC DATA ALREADY SAVED
+# *************************************************************
+# glimpse
 
 # adding taxon labels
 all_inat <- all_inat %>%

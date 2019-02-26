@@ -101,6 +101,11 @@ plants <- all_inat %>% filter(taxon_class_name %in% c("Magnoliopsida", "Liliopsi
 animals <- all_inat %>% filter(taxon_class_name %in% c("Arachnida", "Aves", "Gastropoda", "Insecta", "Amphibia", "Reptilia", "Mammalia"))
 
 
+# for later use to match common names to scientific names
+names <- all_inat %>%
+  select(scientific_name:common_name) %>%
+  unique()
+
 # *************************************************************
 # MAP OF CNC CITIES (Figure 1)
 # *************************************************************
@@ -126,9 +131,17 @@ ggmap(map) +
 
 
 # *************************************************************
-# EDA OF URBAN HOMOGENIZATION BETWEEN CITIES
+# DESC STATS OF URBAN HOMOGENIZATION BETWEEN CITIES
 # *************************************************************
 # // GENERAL STATS
+# BY TAXON, overall number of observations and and number of species to use for taxon_over8
+all_stats <- all_inat %>%
+  group_by (taxon) %>%
+  summarise (total_species = n_distinct(scientific_name), total_obs = n()) %>%
+  mutate(prop_sp = (total_species/5209)*100, prop_obs = (total_obs/66209)*100) %>%
+  arrange(desc(total_obs))
+all_stats
+
 # how many cities does each species appear in? (14 possible cities)
 total_cities <- all_inat %>%
   group_by (scientific_name) %>%
@@ -136,11 +149,6 @@ total_cities <- all_inat %>%
   select(scientific_name, num_cities) %>%
   arrange(desc(num_cities))
 total_cities
-
-# for later use to match common names to scientific names
-names <- all_inat %>%
-  select(scientific_name:common_name) %>%
-  unique()
 
 # Table of all species found in > 8 cities
 over8 <- all_inat %>%
@@ -152,12 +160,6 @@ over8 <- all_inat %>%
   filter(num_cities > 7) %>%
   arrange(desc(num_cities))
 over8
-
-# BY TAXON, overall number of observations and and number of species to use for taxon_over8
-all_stats <- all_inat %>%
-  group_by (taxon) %>%
-  summarise (total_species = n_distinct(scientific_name), total_obs = n())
-all_stats
 
 # this is to create blank variables for the taxon groups that do not have any species in >8 cities
 blanks <- tibble(taxon = c("gastropods", "ferns"), 
@@ -171,7 +173,7 @@ taxon_over8 <- over8 %>%
   bind_rows(blanks) %>%
   left_join(all_stats, by = "taxon") %>%
   mutate(prop_sp = (over8_species/total_species)*100, prop_obs = (over8_obs/total_obs)*100) %>%
-  arrange(taxon)
+  arrange(desc(over8_obs))
 taxon_over8
 write.csv(taxon_over8, "figures_n_tables/taxon_over8.csv") 
 
@@ -348,7 +350,7 @@ arm_labels_over <- slopes %>%
 arm_labels_under <- slopes %>%
   filter(slope_arm > 0 ) %>%
   filter(num_cities>7)
-plot_arm <- ggplot(data=arm_slopes,aes(x=num_cities,y=slope_arm, colour=taxon))+
+plot_arm <- ggplot(data=slopes,aes(x=num_cities,y=slope_arm, colour=taxon))+
   geom_point() + 
   geom_text_repel(data = arm_labels_over, aes(x=num_cities, y=slope_arm, label = common_name)) + 
   geom_text_repel(data = arm_labels_under, aes(x=num_cities, y=slope_arm, label = common_name)) + 
@@ -356,12 +358,6 @@ plot_arm <- ggplot(data=arm_slopes,aes(x=num_cities,y=slope_arm, colour=taxon))+
   theme_bw()+
   scale_y_reverse(lim=c(8, -8))
 plot_arm
-
-# Combine the cam and arm slopes into one lovely figure and save
-plots <- ggarrange(plot_cam, plot_arm, labels = c("A", "B"), ncol = 1, nrow = 2)
-plots <- annotate_figure(plots,
-                         top = text_grob("Biotic homogenization with urbanization intensity", face = "bold", size = 18))
-ggsave(plot = plots, filename = "figures_n_tables/bh_CAM_ARM.png", height = 24, width = 20, units = "cm")
 
 
 

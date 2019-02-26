@@ -63,13 +63,21 @@ sp_city_wNLCD <- spTransform(sp_points3, CRS("+init=epsg:4326")) %>%
     as.tibble() %>%
     rename("nlcd_code" = !!names(.[37])) %>%
     left_join(nlcd_codes, by = "nlcd_code")
-sp_city_wNLCD
+View(sp_city_wNLCD)
     
 
 # *************************************************************
 # TO SAVE TIME, ALL ALL CNC DATA ALREADY SAVED
 # *************************************************************
-# glimpse
+# as above, but for every 2016-2018 CNC obs once filtered. N=66209.
+head(all_inat)
+
+# what are the total species numbers and observations in the dataset?
+totals <- all_inat %>%
+  summarise (num_species = n_distinct (scientific_name),
+             num_obs = n())
+totals$num_species
+totals$num_obs
 
 # adding taxon labels
 all_inat <- all_inat %>%
@@ -92,9 +100,16 @@ all_inat$scientific_name <- as.factor(all_inat$scientific_name)
 plants <- all_inat %>% filter(taxon_class_name %in% c("Magnoliopsida", "Liliopsida", "Polypodiopsida", "Pinopsida", "Agaricomycetes", "Lecanoromycetes"))
 animals <- all_inat %>% filter(taxon_class_name %in% c("Arachnida", "Aves", "Gastropoda", "Insecta", "Amphibia", "Reptilia", "Mammalia"))
 
+
 # *************************************************************
 # MAP OF CNC CITIES (Figure 1)
 # *************************************************************
+# 'cities' is a summary file I created in advance that is a summary of 
+# number of species and observations for each city, with additional useful
+# stuff for later analyses (region, central lat/lon, and better formatting
+# for hometown)
+head(cities)
+
 map <- get_googlemap(center = c(-98, 38), zoom = 4,
                      color = "bw",
                      style = "feature:road|visibility:off&style=element:labels|visibility:off&style=feature:administrative|visibility:off")
@@ -109,28 +124,18 @@ ggmap(map) +
   labs(colour = "Regions", size = "Records")+
   geom_text_repel(data = cities, aes(x = lon, y = lat, label = official_hometown))
 
-# Save it for export
-ggsave("figures_n_tables/cnc_map.png", width = 20, height = 15, units = "cm")
-
 
 # *************************************************************
-# URBAN HOMOGENIZATION BETWEEN CITIES (Table 2)
+# EDA OF URBAN HOMOGENIZATION BETWEEN CITIES
 # *************************************************************
 # // GENERAL STATS
-# how many cities does each species appear in?
+# how many cities does each species appear in? (14 possible cities)
 total_cities <- all_inat %>%
   group_by (scientific_name) %>%
   summarise (num_cities = n_distinct(hometown)) %>%
-  select(scientific_name, num_cities)
-
-# what are the total species numbers and observations in the dataset?
-totals <- all_inat %>%
-  summarise (num_species = n_distinct (scientific_name),
-             num_obs = n())
-totals$num_species
-totals$num_obs
-
-
+  select(scientific_name, num_cities) %>%
+  arrange(desc(num_cities))
+total_cities
 
 # for later use to match common names to scientific names
 names <- all_inat %>%
@@ -168,7 +173,8 @@ taxon_over8 <- over8 %>%
   left_join(all_stats, by = "taxon") %>%
   mutate(prop_sp = (over8_species/total_species)*100, prop_obs = (over8_obs/total_obs)*100) %>%
   arrange(taxon)
-write.csv(taxon_over8, "figures_n_tables/taxon_over8.csv")    # TABLE 2
+taxon_over8
+write.csv(taxon_over8, "figures_n_tables/taxon_over8.csv")  
 
 # To compare to overall totals, a subset of only those species with more than 100 observations
 subset100 <- all_inat %>%
@@ -178,9 +184,6 @@ subset100 <- all_inat %>%
   ungroup() %>%
   summarise (num_species = n_distinct (scientific_name),
              num_obs = n())
-subset100$num_species
-subset100$num_obs
-
 
 # creating a table of the 10 taxon classes that looks at how frequently
 # species from these groups have at least 100 observations.  For example,
@@ -205,8 +208,7 @@ everything <-all_inat %>%
   left_join(over100, by = "taxon") %>%
   mutate (diff_species = all_ratio_species - subset_ratio_species,
           diff_obs = all_ratio_obs - subset_ratio_obs) 
-
-everything    # Birds and dicots get overrepresented in the top 100, while insects get underrepresented
+View(everything)    # Birds and dicots get overrepresented in the top 100, while insects get underrepresented
 write.csv(everything, "figures_n_tables/summary_over100obs.csv")  # Table 5
 
 # Top10 lists for all cities

@@ -207,7 +207,6 @@ big_simple_ranks
 # *************************************************************
 # WITHIN CITY - COMMUNITY COMPOSITION 
 # *************************************************************
-source('functions/cc_functions.r')
 
 # All Taxa
 cc_all <- cc_matrix(all_inat)
@@ -228,14 +227,14 @@ plot_cc_us(cc_animals, cc_animals_env, "Animals")
 plot_cc_region_4(animals, "Animals")
 
 # Create a table of PERMANOVA results for all taxa in all regions, nested by hometown.
-tab_all <- adonis.table.hometown(all_wfreq) %>% mutate (taxon = "all")
+tab_all <- adonis.table.hometown(all_inat) %>% mutate (taxon = "all")
 tab_plants <- adonis.table.hometown(plants) %>% mutate (taxon = "plants")
 tab_animals <- adonis.table.hometown(animals) %>% mutate (taxon = "animals")
 tab <- bind_rows(tab_all, tab_plants, tab_animals)
 write.csv(tab, "figures_n_tables/permanova_results_hometown.csv")       # Table 3
 
 # Create a table of PERMANOVA results for all taxa in all regions, nested by land cover type.
-tab_all <- adonis.table.lc(all_wfreq) %>% mutate (taxon = "all")
+tab_all <- adonis.table.lc(all_inat) %>% mutate (taxon = "all")
 tab_plants <- adonis.table.lc(plants) %>% mutate (taxon = "plants")
 tab_animals <- adonis.table.lc(animals) %>% mutate (taxon = "animals")
 tab <- bind_rows(tab_all, tab_plants, tab_animals)

@@ -4,49 +4,9 @@
 # Specificly: These are the functions used to make the individual species patterns tables
 
 
-# *************************************************************
-# FUNCTION THAT CREATES A TOP 10 LIST FOR EACH CITY
-# *************************************************************
-
-top10 <- function (city, taxon) {
-  taxon %>%
-    filter(hometown == city) %>%
-    group_by(common_name) %>%
-    summarise(count = n()) %>%
-    arrange(desc(count)) %>%
-    mutate(rank = rank(desc(count), ties.method="average")) %>%
-    filter (rank < 11) %>%
-    select (common_name) %>% #this line can be deleted if needing more info
-    rename(!!city := common_name)
-}
-
-top10_knit <- function(taxon) {
-  taxa_name <-deparse(substitute(taxon))
-  
-  t10 <- top10("austin", taxon) %>%
-    bind_cols (top10("boston", taxon)) %>%
-    bind_cols (top10("chicago", taxon)) %>%
-    bind_cols (top10("dallas", taxon)) %>%
-    bind_cols (top10("houston", taxon)) %>%
-    bind_cols (top10("losangeles", taxon)) %>%
-    bind_cols (top10("miami", taxon)) %>%
-    bind_cols (top10("minneapolis", taxon)) %>%
-    bind_cols (top10("newyork", taxon)) %>%
-    bind_cols (top10("raleigh", taxon)) %>%
-    bind_cols (top10("saltlakecity", taxon)) %>%
-    bind_cols (top10("sanfrancisco", taxon)) %>%
-    bind_cols (top10("seattle", taxon)) %>%
-    bind_cols (top10("washingtondc", taxon)) %>%
-    mutate (subgroup = taxa_name) %>%
-    select (subgroup, everything())
-  
-  filename <- paste("figures_n_tables/t10_", taxa_name, ".csv", sep = "")
-  write.csv(t10, filename)
-}
-
 
 # *************************************************************
-# FUNCTIONS TO CREATE A GIANT TABLE OF RANKS FOR EACH TAXA
+# FUNCTIONS TO CREATE A TABLE OF RANKS FOR EACH TAXA
 # *************************************************************
 
 # Creates a ranked list of the most common species for each city (land cover types lumped together)

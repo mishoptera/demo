@@ -4,7 +4,6 @@
 # Specificly: These are the functions utilized for the community composition analyses
 
 
-
 # *************************************************************
 # REFORMAT DATA
 # *************************************************************
@@ -111,6 +110,7 @@ plot_cc_us <- function (all_matrix, all_env, title) {
           panel.grid.major = element_blank(),  #remove major-grid labels
           panel.grid.minor = element_blank(),  #remove minor-grid labels
           plot.background = element_blank()) 
+  plot(cg)
   
   # plot it for landcover grouping
   lc <- ggplot()+
@@ -131,13 +131,14 @@ plot_cc_us <- function (all_matrix, all_env, title) {
           panel.grid.major = element_blank(),  #remove major-grid labels
           panel.grid.minor = element_blank(),  #remove minor-grid labels
           plot.background = element_blank())
-  
+  plot(lc)
   # Combine into one lovely figure and save
   plots <- ggarrange(lc, cg, labels = c("A", "B"), ncol = 1, nrow = 2)
   plots <- annotate_figure(plots,
                            top = text_grob(title, face = "bold", size = 18))
   filename <- paste("figures_n_tables/cc_us_", title, ".jpg", sep = "")
   ggsave(plot = plots, filename = filename, height = 20, width = 24, units = "cm")
+  plot(plots)
 }
 
 
@@ -205,6 +206,7 @@ plot_cc_region_4 <- function (taxon, title) {
   regions <- annotate_figure(regions, top = text_grob(title, face = "bold", size = 18))
   filename <- paste("figures_n_tables/cc_region_", title, ".jpg", sep = "")
   ggsave(plot = regions, filename = filename, height = 20, width = 24, units = "cm")
+  plot(regions)
 }
 
 
